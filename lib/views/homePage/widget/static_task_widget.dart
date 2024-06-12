@@ -29,6 +29,7 @@ class StaticTaskWidget extends StatefulWidget {
 }
 
 class _StaticTaskWidgetState extends State<StaticTaskWidget> {
+  late StreamSubscription<CurrentMinuteState> timerListenStream;
   bool showDetailInfor = false;
   TaskLogModel taskLog = TaskLogModel(
     taskID: '',
@@ -56,7 +57,7 @@ class _StaticTaskWidgetState extends State<StaticTaskWidget> {
         }
       }
     });
-    timerBloc.timerCheckTaskStateController.stream
+    timerListenStream = timerBloc.timerCheckTaskStateController.stream
         .listen((CurrentMinuteState currentMinuteState) {
       final startTimer = int.parse(widget.task.startTime);
       final stopTimer = int.parse(widget.task.stopTime);
@@ -85,20 +86,18 @@ class _StaticTaskWidgetState extends State<StaticTaskWidget> {
         .listen((TaskLogState taskLogState) {
       if (taskLogState.taskLog.taskID == widget.task.id) {
         // print(taskLog.flow1);
-        if(mounted){
+        if (mounted) {
           setState(() {
             if (taskLogState.taskLog.status == "1") {}
             taskLog = taskLogState.taskLog;
           });
         }
-        
       }
     });
   }
 
   @override
   void dispose() {
-    // schedulerBloc.taskUpdateIsActiveController.close();
     super.dispose();
   }
 
@@ -206,6 +205,9 @@ class _StaticTaskWidgetState extends State<StaticTaskWidget> {
 
   Future<dynamic> showResultDeleteDialog(
       BuildContext context, TaskDeleteState taskDeleteState) {
+    if (taskDeleteState.statusCode == 200) {
+      timerListenStream.cancel();
+    }
     return showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -267,10 +269,12 @@ class _StaticTaskWidgetState extends State<StaticTaskWidget> {
                         // changes the state of the switch
                         onChanged: (value) {
                           //add event update task's isActive
+                          // print(widget.task.isActive);
+                          // print(value);
                           schedulerBloc.eventController.add(
                               TaskUpdateIsActiveEvent(
                                   id: widget.task.id,
-                                  isActive: widget.task.isActive));
+                                  isActive: value == true ? "1" : "0"));
                           showDialog(
                             context: context,
                             barrierDismissible: false,
